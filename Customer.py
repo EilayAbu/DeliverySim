@@ -1,28 +1,22 @@
 import uuid
 
 class Customer:
-    def __init__(self, name, address, phone):
+    
+    def __init__(self, customer_id, name, address, phone): #Constructor to initialize customer details
+        self.customer_id = customer_id
         self.name = name
         self.address = address
         self.phone = phone
-        self.orders = {}
 
-    def create_order(self, destination):
-        delivery_id = str(uuid.uuid4())
-        self.orders[delivery_id] = {
-            "sender": {
-                "name": self.name,
-                "address": self.address,
-                "phone": self.phone
-            },
-            "destination": destination,
-            "status": "Created"
+    def get_details(self): #Method to get customer details
+        return {
+            "customer_id": self.customer_id,
+            "name": self.name,
+            "address": self.address,
+            "phone": self.phone
         }
-        return delivery_id
+    
+    def get_order_ID(self):
+        return self.order_ID
 
-    def check_status(self, delivery_id):
-        order = self.orders.get(delivery_id)
-        if order:
-            return order["status"]
-        else:
-            return "Invalid delivery ID"
+    
