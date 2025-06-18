@@ -1,3 +1,4 @@
+from datetime import datetime
 # create a class Order with the following attributes:
 # - order_id: int where the order ID is unique
 # - customer_id: int
@@ -6,12 +7,25 @@
 class Order:
     _next_order_id = 1
 
-    def __init__(self, customer_id: int, destination: str, status: str):
+    def __init__(self, customer_id: int, destination: str):
         self.order_id = Order._next_order_id
         Order._next_order_id += 1
         self.customer_id = customer_id
         self.destination = destination
-        self.status = status
+        self.status = 'pending'  # Default status
+        self.date = datetime.now()
+
+
+        # save in a json file
+        import json
+        import os
+        orders_file = 'orders.json'
+
+    def get_order_id(self) -> int:
+        return self.order_id
+
+    def get_status(self) -> str:
+        return self.status
 
     def __str__(self):
         return (
