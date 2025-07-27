@@ -55,6 +55,7 @@ def load_couriers_from_file(self, filename="couriers.json"):
                 c = courier.Courier(entry["name"], entry["courier_id"], entry["region"])
                 c.deliveries = entry.get("deliveries", [])
                 self.couriers.append(c)
+        
 
 
 
@@ -83,7 +84,7 @@ def load_orders_from_file(self, filename="orders.json"):
         with open(filename, "r") as f:
             data = json.load(f)
             for entry in data:
-                o = Order(entry["customer_id"], entry["destination"])
+                o = order.Order(entry["customer_id"], entry["destination"])
                 o.order_id = entry["order_id"]
                 o.status = entry["status"]
                 o.date = entry["date"]
@@ -99,7 +100,7 @@ def add_order(self, order_id, customer_name, delivery_address):
     self.orders.append(new_order)
     print(f"Order {order_id} added for {customer_name} at {delivery_address}.")
 
-    
+
 
 def add_order_by_customer(order_id, customer_name, delivery_address):
     if not any(o.order_id == order_id for o in orders):
@@ -132,8 +133,47 @@ def get_orders_for_courier(self, courier_id):
     return [o for o in self.orders if o.courier and o.courier.courier_id == courier_id]
 
 
+#------------ COURIERS ------------
 
 
+def add_courier(self, courier):
+        self.couriers.append(courier)
+        print(f"Courier {courier.name} (ID: {courier.courier_id}) added.")
+        self.save_couriers_to_file()
+        
+def find_courier_by_id(self, courier_id):
+        for c in self.couriers:
+            if c.courier_id == courier_id:
+                return c
+        return None
+    
     
 
-    
+def find_available_courier(self):
+        if not self.couriers:
+            return None
+        return min(self.couriers, key=lambda c: len(c.deliveries))
+
+def get_active_couriers(self):
+        return [c for c in self.couriers if len(c.deliveries) > 0]
+
+def get_all_couriers(self):
+        return self.couriers
+
+def get_region_loads(self):
+        region_counts = defaultdict(int)
+        for o in self.orders:
+            if o.courier:
+                region_counts[o.courier.courier_region] += 1
+        return dict(region_counts)
+
+def get_average_delivery_time(self):
+        total_time = 0
+        delivered_orders = 0
+        for o in self.orders:
+            if hasattr(o, 'delivery_time'):
+                total_time += o.delivery_time
+                delivered_orders += 1
+        return total_time / delivered_orders if delivered_orders > 0 else 0
+
+   
