@@ -40,3 +40,13 @@ class Order:
 
     def update_status(self, new_status: str):
         self.status = new_status
+    
+    #sprint 2
+    def to_dict(self):
+        return {
+            "order_id": self.order_id,
+            "customer_id": self.customer_id,
+            "destination": self.destination,
+            "status": self.status,
+            "date": self.date.strftime("%Y-%m-%d %H:%M:%S")
+        }

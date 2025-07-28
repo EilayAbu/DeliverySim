@@ -5,6 +5,7 @@ import Order as order
 import heapq
 orders = []
 
+<<<<<<< Updated upstream
 
 def __init__(self):
         self.orders = []
@@ -14,6 +15,12 @@ def __init__(self):
 
 
 
+=======
+class DispatchSystem:
+    def __init__(self):
+        self.orders = []
+        self.couriers = []
+>>>>>>> Stashed changes
 
 
 
