@@ -77,6 +77,8 @@ def customer_menu(user):
     while True:
         print("\n--- Customer Menu ---")
         print("1. Create new order")
+        print("2. View order history")
+        print("3. View active orders")
         print("0. Logout")
         choice = input("Choose: ")
         if choice == "1":
@@ -85,11 +87,19 @@ def customer_menu(user):
             order = customer.create_order(destination, item)
             dispatch_system.add_order(order)
             print(f"\n📦 Order created! ID: {order.order_id}")
+        elif choice == "2":
+            for order in dispatch_system.history_of_orders_by_customer(customer.customer_id):
+                print(order)
+        elif choice == "3":
+            for order in dispatch_system.get_active_orders():
+                print(order)
         elif choice == "0":
             print("\n👋 Logged out from customer account.")
             break
         else:
             print("\n❌ Invalid option.")
+
+
 
 def courier_menu(user):
     courier_id = int(user["user_id"][-3:], 16) % 1000
@@ -118,6 +128,8 @@ def courier_menu(user):
             break
         else:
             print("\n❌ Invalid option.")
+
+
 
 def manager_menu():
     print("\n--- Manager Menu ---")
@@ -160,6 +172,8 @@ def manager_menu():
             break
         else:
             print("\n❌ Invalid option.")
+
+
 
 # --- Main CLI Loop ---
 def main():

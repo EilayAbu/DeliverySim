@@ -5,5 +5,13 @@
         "phone": "admin",
         "password": "admin123",
         "role": "manager"
+    },
+    {
+        "user_id": "b8c8f7eb",
+        "name": "Eilay Abuhachira",
+        "phone": "050221780",
+        "password": "12345",
+        "address": "KfarAhim",
+        "role": "customer"
     }
 ]
