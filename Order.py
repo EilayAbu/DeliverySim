@@ -44,8 +44,8 @@ class Order:
     #     self.date = datetime.now()
     #     self.courier = None  # ← שורה חשובה שחסרה -added by avital
 
-    def __init__(self, customer_id, destination):
-        self.order_id = generate_unique_order_id()
+    def __init__(self, order_id, customer_id, destination):
+        self.order_id = order_id
         self.customer_id = customer_id
         self.destination = destination
         self.status = 'pending'

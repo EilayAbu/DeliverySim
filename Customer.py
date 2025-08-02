@@ -23,8 +23,11 @@
 import uuid
 
 class Customer:
-    def __init__(self, name, address, phone):
-        self.customer_id = str(uuid.uuid4())[:8]
+    def __init__(self,customer_id ,name, address, phone):
+        if not customer_id:
+            customer_id = str(uuid.uuid4())[:8]
+        else:
+            self.customer_id = customer_id
         self.name = name
         self.address = address
         self.phone = phone
@@ -43,7 +46,7 @@ class Customer:
 
     def create_order(self, destination, item_description, weight=1.0):
         from Order import Order
-        order = Order(customer_id=self.customer_id, destination=destination)
+        order = Order(str(uuid.uuid4())[:8], self.customer_id, destination)
         order.item_description = item_description
         order.weight = weight
         self.order_history.append(order.order_id)

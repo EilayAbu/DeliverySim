@@ -73,7 +73,7 @@ def sign_in():
 
 # --- Role Menus ---
 def customer_menu(user):
-    customer = Customer(user["name"], user["address"], user["phone"], user["password"])
+    customer = Customer(user["user_id"], user["name"], user["address"], user["phone"])
     while True:
         print("\n--- Customer Menu ---")
         print("1. Create new order")
@@ -85,7 +85,8 @@ def customer_menu(user):
             destination = input("Enter delivery destination: ")
             item = input("Enter item description: ")
             order = customer.create_order(destination, item)
-            dispatch_system.add_order(order)
+            dispatch_system.add_order_by_customer(order, customer.name, destination)
+            dispatch_system.save_order_to_file(order)
             print(f"\n📦 Order created! ID: {order.order_id}")
         elif choice == "2":
             for order in dispatch_system.history_of_orders_by_customer(customer.customer_id):
@@ -110,6 +111,7 @@ def courier_menu(user):
     while True:
         print("\n--- Courier Menu ---")
         print("1. View assigned deliveries")
+        print("2. Update order status")
         print("0. Logout")
         choice = input("Choose: ")
         if choice == "1":
@@ -123,6 +125,11 @@ def courier_menu(user):
                     oid = int(input("Order ID: "))
                     status = input("New status (picked_up/in_transit/delivered): ")
                     dispatch_system.update_order_status(oid, status)
+        elif choice == "2":
+            order_id = int(input("Enter order ID to update: "))
+            new_status = input("Enter new status (picked_up/in_transit/delivered): ")
+            dispatch_system.courier_update_status(courier_id, order_id, new_status)
+            print(f"Order {order_id} status updated to {new_status}.")
         elif choice == "0":
             print("\n👋 Logged out from courier account.")
             break

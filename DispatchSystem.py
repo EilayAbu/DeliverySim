@@ -84,7 +84,7 @@ class DispatchSystem:
             with open(filename, "r") as f:
                 data = json.load(f)
                 for entry in data:
-                    o = order.Order(entry["customer_id"], entry["destination"])
+                    o = order.Order(entry["order_id"], entry["customer_id"], entry["destination"])
                     o.order_id = entry["order_id"]
                     o.status = entry["status"]
                     o.date = entry["date"]
@@ -94,7 +94,7 @@ class DispatchSystem:
                     self.orders.append(o)
 
     def history_of_orders_by_customer(self, customer_id):
-        return [o for o in self.orders if o.customer_id == customer_id and o.status == 'delivered']
+        return [o for o in self.orders if o.customer_id == customer_id ]
 
     def add_order(self, order_id, customer_name, delivery_address):
         new_order = order.Order(order_id, customer_name, delivery_address)
@@ -145,6 +145,23 @@ class DispatchSystem:
 
     def get_orders_for_courier(self, courier_id):
         return [o for o in self.orders if o.courier and o.courier.courier_id == courier_id]
+    
+    def save_order_to_file(self, order, filename="orders.json"):
+            import json
+            data = []
+            if os.path.exists(filename):
+                with open(filename, "r") as f:
+                    data = json.load(f)
+            data.append({
+                "order_id": order.order_id,
+                "customer_id": order.customer_id,
+                "destination": order.destination,
+                "status": order.status,
+                "date": str(order.date),
+                "courier_id": order.courier.courier_id if order.courier else None
+            })
+            with open(filename, "w") as f:
+                json.dump(data, f, indent=4)
 
     def save_orders_to_file(self, filename="orders.json"):
             import json
@@ -167,7 +184,21 @@ class DispatchSystem:
             self.couriers.append(courier)
             print(f"Courier {courier.name} (ID: {courier.courier_id}) added.")
             self.save_couriers_to_file()
-            
+    
+
+    def courier_update_status(self, courier_id, order_id, status):
+        courier = self.find_courier_by_id(courier_id)
+        if courier:
+            order = self.find_order_by_id(order_id)
+            if order and order.courier == courier:
+                order.update_status(status)
+                print(f"Order {order_id} status updated to {status} by courier {courier.name}.")
+                self.save_orders_to_file()
+            else:
+                print(f"Order {order_id} not found or not assigned to courier {courier.name}.")
+        else:
+            print(f"Courier {courier_id} not found.")
+
     def find_courier_by_id(self, courier_id):
             for c in self.couriers:
                 if c.courier_id == courier_id:
