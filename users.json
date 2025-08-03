@@ -13,5 +13,41 @@
         "password": "12345",
         "address": "KfarAhim",
         "role": "customer"
+    },
+    {
+        "name": "avi",
+        "phone": "1",
+        "password": "1",
+        "role": "courier",
+        "user_id": "ba4968ef",
+        "courier_id": 287,
+        "region": "tel aviv"
+    },
+    {
+        "name": "ben",
+        "phone": "2",
+        "password": "2",
+        "role": "courier",
+        "user_id": "40415cf2",
+        "courier_id": 314,
+        "region": "ashdod"
+    },
+    {
+        "name": "eli",
+        "phone": "3",
+        "password": "3",
+        "role": "courier",
+        "user_id": "31e2f7f8",
+        "courier_id": 40,
+        "region": "haifa"
+    },
+    {
+        "name": "david",
+        "phone": "4",
+        "password": "4",
+        "role": "courier",
+        "user_id": "1f1b079c",
+        "courier_id": 948,
+        "region": "beer sheva"
     }
 ]

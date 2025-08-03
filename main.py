@@ -6,6 +6,26 @@ from Customer import Customer
 from Courier import Courier
 from Manager import Manager
 
+from Order import Order
+
+def load_orders_from_file(filename="orders.json"):
+    orders = []
+    try:
+        with open(filename, "r") as f:
+            data = json.load(f)
+            for entry in data:
+                order = Order(
+                    order_id=entry["order_id"],
+                    customer_id=entry["customer_id"],
+                    destination=entry["destination"]
+                )
+                order.status = entry["status"]
+                orders.append(order)
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    return orders
+
+
 USERS_FILE = "users.json"
 dispatch_system = DispatchSystem()
 
@@ -79,21 +99,51 @@ def customer_menu(user):
         print("1. Create new order")
         print("2. View order history")
         print("3. View active orders")
+        print("4. Track order status by ID")
         print("0. Logout")
         choice = input("Choose: ")
         if choice == "1":
             destination = input("Enter delivery destination: ")
             item = input("Enter item description: ")
             order = customer.create_order(destination, item)
+    
+    # 🧭 ננסה לשייך לפי מרחק בפועל עם Google Maps
+            success = dispatch_system.assign_to_closest_courier_by_distance(order)
+
+            if not success:
+                print("⚠️ Order not created due to invalid location.")
+                continue  # לא לשמור את ההזמנה
+
             dispatch_system.add_order_by_customer(order, customer.name, destination)
             dispatch_system.save_order_to_file(order)
             print(f"\n📦 Order created! ID: {order.order_id}")
+
         elif choice == "2":
             for order in dispatch_system.history_of_orders_by_customer(customer.customer_id):
                 print(order)
         elif choice == "3":
-            for order in dispatch_system.get_active_orders():
-                print(order)
+            all_orders = load_orders_from_file()
+            active_orders = customer.get_active_orders(all_orders)
+            if not active_orders:
+                print("\n📭 No active orders found.")
+            else:
+                print("\n📦 Active Orders:")
+                for order in active_orders:
+                    print(order)
+        elif choice == "4":
+            order_id = input("Enter your Order ID: ").strip()
+            order_found = False
+            for o in dispatch_system.orders:
+                if o.order_id == order_id and o.customer_id == customer.customer_id:
+                    print(f"\n📦 Order ID: {o.order_id}")
+                    print(f"Destination: {o.destination}")
+                    print(f"Item: {o.item_description}")
+                    print(f"Status: {o.status}")
+                    order_found = True
+                    break
+            if not order_found:
+                print("❌ Order not found or doesn't belong to you.")
+
         elif choice == "0":
             print("\n👋 Logged out from customer account.")
             break
@@ -102,39 +152,84 @@ def customer_menu(user):
 
 
 
-def courier_menu(user):
-    courier_id = int(user["user_id"][-3:], 16) % 1000
-    courier = dispatch_system.find_courier_by_id(courier_id)
-    if not courier:
-        courier = Courier(user["name"], courier_id, "default")
-        dispatch_system.add_courier(courier)
+def courier_menu(user, dispatch_system):
+    print(f"\n👋 Welcome {user['name']}!")
+
+    courier_id = user.get("courier_id")
+    region = user.get("region")
+    courier = Courier(user["name"], courier_id, region)
+
+
+    for order in dispatch_system.orders:
+        if getattr(order, "courier_id", None) == courier.courier_id:
+            courier.assign_order(order.order_id)
+
+
+    courier = Courier(user["name"], courier_id, region)
+
+    # טען את ההזמנות המשויכות
+    for order in dispatch_system.orders:
+        if order.courier and hasattr(order.courier, 'courier_id'):
+            if order.courier.courier_id == courier.courier_id:
+                courier.assign_order(order.order_id)
+
     while True:
         print("\n--- Courier Menu ---")
         print("1. View assigned deliveries")
         print("2. Update order status")
         print("0. Logout")
-        choice = input("Choose: ")
-        if choice == "1":
-            orders = dispatch_system.get_orders_for_courier(courier_id)
-            if not orders:
-                print("\nNo deliveries assigned.")
+        courier_choice = input("Choose: ")
+
+        if courier_choice == "1":
+            if courier.deliveries:
+                print("\n📦 Your Assigned Deliveries:")
+                for oid in courier.deliveries:
+                    for order in dispatch_system.orders:
+                        if order.order_id == oid:
+                            print(f"- Order ID: {order.order_id} | Destination: {order.destination} | Status: {order.status}")
             else:
-                for o in orders:
-                    print(f"\nOrder ID: {o.order_id}, Status: {o.status}, Destination: {o.destination}")
-                if input("Update order status? (y/n): ").lower() == 'y':
-                    oid = int(input("Order ID: "))
-                    status = input("New status (picked_up/in_transit/delivered): ")
-                    dispatch_system.update_order_status(oid, status)
-        elif choice == "2":
-            order_id = int(input("Enter order ID to update: "))
-            new_status = input("Enter new status (picked_up/in_transit/delivered): ")
-            dispatch_system.courier_update_status(courier_id, order_id, new_status)
-            print(f"Order {order_id} status updated to {new_status}.")
-        elif choice == "0":
-            print("\n👋 Logged out from courier account.")
+                print("\nNo deliveries assigned.")
+
+        elif courier_choice == "2":
+            oid = input("Enter Order ID to update: ")
+            found = False
+            for order in dispatch_system.orders:
+                if order.order_id == oid and order.courier and order.courier.courier_id == courier.courier_id:
+                    print(f"Current status: {order.status}")
+                    print("New status options: picked_up, in_transit, delivered, cancelled")
+                    new_status = input("Enter new status: ").lower()
+                    valid_transitions = {
+                        "assigned": ["picked_up"],
+                        "picked_up": ["in_transit"],
+                        "in_transit": ["delivered"],
+                    }
+
+                    if new_status in ["picked_up", "in_transit", "delivered", "cancelled"]:
+                        current = order.status
+                        if new_status == "cancelled":
+                            order.status = new_status
+                            dispatch_system.save_orders_to_file()
+                            print(f"🚫 Order {oid} cancelled.")
+                        elif current in valid_transitions and new_status in valid_transitions[current]:
+                            order.status = new_status
+                            order.courier_id = courier.courier_id
+                            dispatch_system.save_orders_to_file()
+                            print(f"✅ Order {oid} status updated to {new_status}.")
+                        else:
+                            print(f"❌ Invalid status transition from {current} to {new_status}.")
+                    else:
+                        print("❌ Invalid status.")
+
+                    found = True
+                    break
+            if not found:
+                print("❌ Order not found or not assigned to you.")
+
+        elif courier_choice == "0":
             break
+
         else:
-            print("\n❌ Invalid option.")
+            print("Invalid choice.")
 
 
 
@@ -146,6 +241,7 @@ def manager_menu():
         print("2. Auto-assign orders")
         print("3. Add new courier")
         print("4. View all couriers")
+        print("6. View analytics summary")  # ← חדש
         print("0. Logout")
         choice = input("Choose: ")
         if choice == "1":
@@ -157,28 +253,109 @@ def manager_menu():
             name = input("Courier name: ")
             phone = input("Courier login: ")
             password = input("Courier password: ")
-            users = load_users()
-            user = {
-                "user_id": str(uuid.uuid4())[:8],
+            region = input("Courier region: ")
+
+            import uuid
+            user_id = str(uuid.uuid4())[:8]
+            courier_id = int(user_id[-3:], 16) % 1000
+
+        # יצירת השליח כאובייקט
+            new_courier = Courier(name, courier_id, region)
+            dispatch_system.add_courier(new_courier)
+
+    # הוספה גם ל-users.json עם courier_id
+            user_data = {
                 "name": name,
                 "phone": phone,
                 "password": password,
-                "role": "courier"
+                "role": "courier",
+                "user_id": user_id,
+                "courier_id": courier_id,
+                "region": region
             }
-            users.append(user)
-            save_users(users)
-            print(f"Courier {name} added.")
+
+            try:
+                with open("users.json", "r") as f:
+                    users = json.load(f)
+            except FileNotFoundError:
+                users = []
+
+            users.append(user_data)
+
+            with open("users.json", "w") as f:
+                json.dump(users, f, indent=4)
+
+            print(f"Courier {name} added to region '{region}' with ID {courier_id}.")
+
         elif choice == "4":
-            users = load_users()
-            print("\n--- Couriers List ---")
-            for u in users:
-                if u["role"] == "courier":
-                    print(f"Name: {u['name']}, Phone: {u['phone']}, ID: {u['user_id']}")
+            while True:
+                print("\n--- Courier View Options ---")
+                print("1. View all couriers")
+                print("2. Filter couriers by region")
+                print("3. View region load (number of orders per region)")
+                print("0. Back to manager menu")
+                sub_choice = input("Choose: ")
+
+                if sub_choice == "1":
+                    users = load_users()
+                    print("\n--- All Couriers ---")
+                    for u in users:
+                        if u["role"] == "courier":
+                            region = u.get("region", "Unknown")
+                            print(f"Name: {u['name']}, Phone: {u['phone']}, ID: {u['user_id']}, Region: {region}")
+
+                elif sub_choice == "2":
+                    region_filter = input("Enter region name to filter: ").lower()
+                    users = load_users()
+                    print(f"\n--- Couriers in region '{region_filter}' ---")
+                    found = False
+                    for u in users:
+                        if u["role"] == "courier" and u.get("region", "").lower() == region_filter:
+                            print(f"Name: {u['name']}, Phone: {u['phone']}, ID: {u['user_id']}")
+                            found = True
+                    if not found:
+                        print("⚠️ No couriers found in this region.")
+
+                elif sub_choice == "3":
+                    print("\n--- Region Load ---")
+                    region_loads = dispatch_system.get_region_loads()
+                    if region_loads:
+                        for region, count in region_loads.items():
+                            print(f"Region: {region} | Orders assigned: {count}")
+                    else:
+                        print("No assigned orders found.")
+
+                elif sub_choice == "0":
+                    break
+
+                else:
+                    print("❌ Invalid option.")
+        elif choice == "6":
+            print("\n📊 Analytics Summary:")
+    
+    # זמן משלוח ממוצע
+            avg_time = dispatch_system.get_average_delivery_time()
+            print(f"📦 Average Delivery Time: {avg_time:.2f} hours")
+
+    # עומס לפי אזור
+            print("\n🚚 Region Workload:")
+            region_loads = dispatch_system.get_region_loads()
+            for region, count in region_loads.items():
+                print(f" - {region.title()}: {count} deliveries")
+
+    # עומס לפי שליח
+            print("\n👤 Courier Workload:")
+            delivered_counts = dispatch_system.get_delivered_count_by_courier()
+            for courier in dispatch_system.couriers:
+                count = delivered_counts.get(courier.courier_id, 0)
+                print(f" - {courier.name} (ID: {courier.courier_id}): {count} deliveries")
+
         elif choice == "0":
-            print("\n👋 Logged out from manager account.")
             break
+
         else:
-            print("\n❌ Invalid option.")
+            print("Invalid choice.")
+        
 
 
 
@@ -198,7 +375,7 @@ def main():
             if user["role"] == "customer":
                 customer_menu(user)
             elif user["role"] == "courier":
-                courier_menu(user)
+                courier_menu(user, dispatch_system)
             elif user["role"] == "manager":
                 manager_menu()
         elif choice == "2":

@@ -1,58 +1,13 @@
 [
     {
-        "order_id": 1,
-        "customer_id": "29cd1530",
-        "destination": "hatayasim",
-        "status": "pending",
-        "date": "2025-07-08 20:18:22.313687",
-        "courier_id": null
-    },
-    {
-        "order_id": 1,
-        "customer_id": "00b7d320",
-        "destination": "a",
-        "status": "pending",
-        "date": "2025-07-08 20:20:29.282009",
-        "courier_id": null
-    },
-    {
-        "order_id": 3,
-        "customer_id": "3e014a7c",
-        "destination": "a",
-        "status": "pending",
-        "date": "2025-07-08 20:30:47.287702",
-        "courier_id": null
-    },
-    {
-        "order_id": 460900,
-        "customer_id": "fccc0f78",
-        "destination": "a",
-        "status": "pending",
-        "date": "2025-07-10 20:47:28.079412",
-        "courier_id": null
-    },
-    {
-        "order_id": 161761,
-        "customer_id": "1147aa57",
-        "destination": "ashdod",
-        "status": "pending",
-        "date": "2025-07-10 22:11:13.677160",
-        "courier_id": null
-    },
-    {
-        "order_id": "b6969e2f",
+        "order_id": "a83839a8",
         "customer_id": "b8c8f7eb",
-        "destination": "tel aviv",
-        "status": "pending",
-        "date": "2025-08-02 23:00:28.392415",
-        "courier_id": null
-    },
-    {
-        "order_id": "e65cc98c",
-        "customer_id": "b8c8f7eb",
-        "destination": "oooop",
-        "status": "pending",
-        "date": "2025-08-02 23:02:03.306780",
-        "courier_id": null
+        "customer_name": null,
+        "pickup_address": null,
+        "item_description": "box",
+        "destination": "eilat",
+        "status": "delivered",
+        "courier_id": 948,
+        "date": "2025-08-03 19:22:40"
     }
 ]

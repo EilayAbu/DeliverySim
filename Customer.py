@@ -51,3 +51,12 @@ class Customer:
         order.weight = weight
         self.order_history.append(order.order_id)
         return order
+    
+    def get_active_orders(self, all_orders):
+        return [
+            order for order in all_orders
+            if str(order.customer_id) == str(self.customer_id)
+            and order.status not in ['delivered', 'cancelled']
+        ]
+
+
