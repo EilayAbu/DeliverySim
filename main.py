@@ -1,213 +1,150 @@
-import json
-import os
-import uuid
-from DispatchSystem import DispatchSystem
-from Customer import Customer
 from Courier import Courier
+from Customer import Customer
+from Order import Order
 from Manager import Manager
+from Dispatched import Dispatched  # updated import
 
-USERS_FILE = "users.json"
-dispatch_system = DispatchSystem()
+# Global instance of dispatch system
+dispatch_system = Dispatched()
 
-# --- Persistence ---
-def load_users():
-    if not os.path.exists(USERS_FILE):
-        return []
-    with open(USERS_FILE, "r") as f:
-        return json.load(f)
+# Load existing orders from file if available
+dispatch_system.load_orders_from_file()
 
-def save_users(users):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=4)
+# Placeholder for couriers and customers
+couriers = {}
+customers = {}
 
-# --- Initial Setup ---
-def ensure_manager():
-    users = load_users()
-    if not any(u for u in users if u["role"] == "manager"):
-        users.append({
-            "user_id": "admin001",
-            "name": "Admin",
-            "phone": "admin",
-            "password": "admin123",
-            "role": "manager"
-        })
-        save_users(users)
 
-# --- User Management ---
-def sign_up():
-    print("\n--- Sign Up (Customers only) ---")
-    name = input("Full name: ")
-    address = input("Address: ")
-    phone = input("Phone: ")
-    password = input("Password: ")
+def customer_menu():
+    print("\n--- Customer Menu ---")
+    customer_id = int(input("Enter your customer ID (or 0 to create new): "))
+    if customer_id == 0:
+        name = input("Enter your name: ")
+        address = input("Enter your address: ")
+        phone = input("Enter your phone number: ")
+        customer_id = len(customers) + 1
+        new_customer = Customer(customer_id, name, address, phone)
+        customers[customer_id] = new_customer
+        print(f"Customer created with ID: {customer_id}")
+    elif customer_id not in customers:
+        print("Customer not found.")
+        return
 
-    users = load_users()
-    if any(u["phone"] == phone for u in users):
-        print("\n⚠️ User already exists.")
-        return None
-
-    user = {
-        "user_id": str(uuid.uuid4())[:8],
-        "name": name,
-        "phone": phone,
-        "password": password,
-        "address": address,
-        "role": "customer"
-    }
-    users.append(user)
-    save_users(users)
-    print("\n✅ Registered successfully.")
-    return user
-
-def sign_in():
-    print("\n--- Sign In ---")
-    phone = input("Phone: ")
-    password = input("Password: ")
-    users = load_users()
-    for user in users:
-        if user["phone"] == phone and user["password"] == password:
-            print(f"\n👋 Welcome {user['name']}!")
-            return user
-    print("\n❌ Invalid credentials.")
-    return None
-
-# --- Role Menus ---
-def customer_menu(user):
-    customer = Customer(user["user_id"], user["name"], user["address"], user["phone"])
     while True:
-        print("\n--- Customer Menu ---")
         print("1. Create new order")
-        print("2. View order history")
-        print("3. View active orders")
-        print("0. Logout")
-        choice = input("Choose: ")
+        print("2. Check order status")
+        print("3. Back")
+        choice = input("Choose an option: ")
+
         if choice == "1":
             destination = input("Enter delivery destination: ")
-            item = input("Enter item description: ")
-            order = customer.create_order(destination, item)
-            dispatch_system.add_order_by_customer(order, customer.name, destination)
-            dispatch_system.save_order_to_file(order)
-            print(f"\n📦 Order created! ID: {order.order_id}")
+            order = Order(customer_id, destination)
+            dispatch_system.add_order(order)
+            dispatch_system.save_orders_to_file()  # save to JSON
+            print(f"Order created. Order ID: {order.get_order_id()}")
         elif choice == "2":
-            for order in dispatch_system.history_of_orders_by_customer(customer.customer_id):
-                print(order)
-        elif choice == "3":
-            for order in dispatch_system.get_active_orders():
-                print(order)
-        elif choice == "0":
-            print("\n👋 Logged out from customer account.")
-            break
-        else:
-            print("\n❌ Invalid option.")
-
-
-
-def courier_menu(user):
-    courier_id = int(user["user_id"][-3:], 16) % 1000
-    courier = dispatch_system.find_courier_by_id(courier_id)
-    if not courier:
-        courier = Courier(user["name"], courier_id, "default")
-        dispatch_system.add_courier(courier)
-    while True:
-        print("\n--- Courier Menu ---")
-        print("1. View assigned deliveries")
-        print("2. Update order status")
-        print("0. Logout")
-        choice = input("Choose: ")
-        if choice == "1":
-            orders = dispatch_system.get_orders_for_courier(courier_id)
-            if not orders:
-                print("\nNo deliveries assigned.")
+            order_id = int(input("Enter your order ID: "))
+            for o in dispatch_system.orders:
+                if o.get_order_id() == order_id:
+                    print(o)
+                    break
             else:
-                for o in orders:
-                    print(f"\nOrder ID: {o.order_id}, Status: {o.status}, Destination: {o.destination}")
-                if input("Update order status? (y/n): ").lower() == 'y':
-                    oid = int(input("Order ID: "))
-                    status = input("New status (picked_up/in_transit/delivered): ")
-                    dispatch_system.update_order_status(oid, status)
-        elif choice == "2":
-            order_id = int(input("Enter order ID to update: "))
-            new_status = input("Enter new status (picked_up/in_transit/delivered): ")
-            dispatch_system.courier_update_status(courier_id, order_id, new_status)
-            print(f"Order {order_id} status updated to {new_status}.")
-        elif choice == "0":
-            print("\n👋 Logged out from courier account.")
+                print("Order not found.")
+        elif choice == "3":
             break
         else:
-            print("\n❌ Invalid option.")
+            print("Invalid choice.")
 
+
+def courier_menu():
+    print("\n--- Courier Menu ---")
+    courier_id = int(input("Enter your courier ID: "))
+    courier_obj = dispatch_system.find_courier_by_id(courier_id)
+    if not courier_obj:
+        print("Courier not found.")
+        return
+
+    while True:
+        print("1. View assigned orders")
+        print("2. Update order status")
+        print("3. Back")
+        choice = input("Choose an option: ")
+
+        if choice == "1":
+            for order in dispatch_system.orders:
+                if getattr(order, 'courier', None) == courier_obj:
+                    print(order)
+        elif choice == "2":
+            order_id = int(input("Enter order ID: "))
+            new_status = input("Enter new status (picked_up/in_transit/delivered): ")
+            for o in dispatch_system.orders:
+                if o.get_order_id() == order_id:
+                    o.update_status(new_status)
+                    dispatch_system.save_orders_to_file()  # save update
+                    print("Status updated.")
+                    break
+            else:
+                print("Order not found.")
+        elif choice == "3":
+            break
+        else:
+            print("Invalid choice.")
 
 
 def manager_menu():
     print("\n--- Manager Menu ---")
     manager = Manager("System Manager", dispatch_system)
     while True:
-        print("\n1. View active orders")
-        print("2. Auto-assign orders")
-        print("3. Add new courier")
-        print("4. View all couriers")
-        print("0. Logout")
-        choice = input("Choose: ")
+        print("1. View active orders")
+        print("2. Manually assign order")
+        print("3. Auto assign orders")
+        print("4. View analytics")
+        print("5. Back")
+        choice = input("Choose an option: ")
+
         if choice == "1":
-            for order in manager.view_active_orders():
-                print(order)
+            active_orders = manager.view_active_orders()
+            for o in active_orders:
+                print(o)
         elif choice == "2":
-            manager.auto_assign_orders()
+            order_id = int(input("Enter order ID: "))
+            courier_id = int(input("Enter courier ID: "))
+            manager.manually_assign_order(order_id, courier_id)
+            dispatch_system.save_orders_to_file()
         elif choice == "3":
-            name = input("Courier name: ")
-            phone = input("Courier login: ")
-            password = input("Courier password: ")
-            users = load_users()
-            user = {
-                "user_id": str(uuid.uuid4())[:8],
-                "name": name,
-                "phone": phone,
-                "password": password,
-                "role": "courier"
-            }
-            users.append(user)
-            save_users(users)
-            print(f"Courier {name} added.")
+            manager.auto_assign_orders()
+            dispatch_system.save_orders_to_file()
         elif choice == "4":
-            users = load_users()
-            print("\n--- Couriers List ---")
-            for u in users:
-                if u["role"] == "courier":
-                    print(f"Name: {u['name']}, Phone: {u['phone']}, ID: {u['user_id']}")
-        elif choice == "0":
-            print("\n👋 Logged out from manager account.")
+            analytics = manager.get_analytics()
+            for key, value in analytics.items():
+                print(f"{key}: {value}")
+        elif choice == "5":
             break
         else:
-            print("\n❌ Invalid option.")
+            print("Invalid choice.")
 
 
-
-# --- Main CLI Loop ---
 def main():
-    ensure_manager()
     while True:
-        print("\n--- Welcome to DeliverySim ---")
-        print("1. Sign In")
-        print("2. Sign Up (Customer)")
-        print("0. Exit")
-        choice = input("Choose: ")
+        print("\n=== Welcome to DeliverySim ===")
+        print("1. Customer")
+        print("2. Courier")
+        print("3. Manager")
+        print("4. Exit")
+        choice = input("Select your role: ")
+
         if choice == "1":
-            user = sign_in()
-            if not user:
-                continue
-            if user["role"] == "customer":
-                customer_menu(user)
-            elif user["role"] == "courier":
-                courier_menu(user)
-            elif user["role"] == "manager":
-                manager_menu()
+            customer_menu()
         elif choice == "2":
-            sign_up()
-        elif choice == "0":
-            print("\n👋 Goodbye!")
+            courier_menu()
+        elif choice == "3":
+            manager_menu()
+        elif choice == "4":
+            print("Goodbye!")
             break
         else:
-            print("\n❌ Invalid option.")
+            print("Invalid choice.")
+
 
 if __name__ == "__main__":
     main()
