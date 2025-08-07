@@ -2,10 +2,9 @@ from Courier import Courier
 from Customer import Customer
 from Order import Order
 from Manager import Manager
-from Dispatched import Dispatched  # updated import
-
+from DispatchSystem import DispatchSystem  # updated import
 # Global instance of dispatch system
-dispatch_system = Dispatched()
+dispatch_system = DispatchSystem()
 
 # Load existing orders from file if available
 dispatch_system.load_orders_from_file()
@@ -16,15 +15,22 @@ customers = {}
 
 
 def customer_menu():
+    user
     print("\n--- Customer Menu ---")
-    customer_id = int(input("Enter your customer ID (or 0 to create new): "))
-    if customer_id == 0:
+    choice = int(input("Enter your customer ID (or 0 to create new): "))
+    if choice == 0:
         name = input("Enter your name: ")
+        password = input("Enter your password: ")
         address = input("Enter your address: ")
         phone = input("Enter your phone number: ")
-        customer_id = len(customers) + 1
-        new_customer = Customer(customer_id, name, address, phone)
-        customers[customer_id] = new_customer
+        customer_id = int(input("Enter a unique customer ID: "))
+
+        while customer_id in customers:
+            print("Customer ID already exists. Please try again.")
+            customer_id = int(input("Enter a unique customer ID: "))
+
+        user = Customer(customer_id, name, password, address, phone)
+        customers.append(user)
         print(f"Customer created with ID: {customer_id}")
     elif customer_id not in customers:
         print("Customer not found.")
@@ -38,7 +44,7 @@ def customer_menu():
 
         if choice == "1":
             destination = input("Enter delivery destination: ")
-            order = Order(customer_id, destination)
+            order = Order(Order.generate_unique_order_id(), customer_id, destination)
             dispatch_system.add_order(order)
             dispatch_system.save_orders_to_file()  # save to JSON
             print(f"Order created. Order ID: {order.get_order_id()}")

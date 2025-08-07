@@ -18,17 +18,20 @@
     
 #     def get_order_ID(self):
 #         return self.order_ID
+import json
+import os
 
    
 import uuid
 
 class Customer:
-    def __init__(self,customer_id ,name, address, phone):
+    def __init__(self,customer_id ,name,password, address, phone):
         if not customer_id:
             customer_id = str(uuid.uuid4())[:8]
         else:
             self.customer_id = customer_id
         self.name = name
+        self.password = password
         self.address = address
         self.phone = phone
         self.order_history = []  # ← השורה החסרה!
@@ -51,3 +54,5 @@ class Customer:
         order.weight = weight
         self.order_history.append(order.order_id)
         return order
+
+   

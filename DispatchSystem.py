@@ -1,8 +1,22 @@
-
+from customer_utils import (
+    add_customer,
+    update_customer,
+    delete_customer,
+    get_customer_by_id,
+    get_all_customers,
+    customer_exists
+)
+from courier_utils import (
+    add_courier,
+    update_courier,
+    delete_courier,
+    get_courier_by_id,
+    get_all_couriers,
+    courier_exists
+)
 from collections import defaultdict
 import Courier as courier
 import Order as order
-import heapq
 import json
 import os
 
@@ -13,236 +27,149 @@ class DispatchSystem:
         self.load_couriers_from_file()
         self.load_orders_from_file()
 
-
-
-
-
-
-    def assign_order_to_courier(self, order_id, courier_id):
-        for o in self.orders:
-            if o.order_id == order_id:
-                courier_obj = courier.find_courier_by_id(courier_id)
-                if courier_obj and not o.is_assigned():
-                    o.assign_to(courier_obj)
-                    print(f"Order {order_id} assigned to courier {courier_obj.name}.")
-                
-
     def get_average_delivery_time(self):
-        total_time = 0
-        delivered_orders = 0
-
-        for o in self.orders:
-            if o.is_delivered():
-                total_time += o.delivery_time
-                delivered_orders += 1
-
-        if delivered_orders == 0:
+        total_delivery_time = 0
+        delivered_order_count = 0
+        for order_object in self.orders:
+            if order_object.is_delivered():
+                total_delivery_time += order_object.delivery_time
+                delivered_order_count += 1
+        if delivered_order_count == 0:
             return 0
-
-        return total_time / delivered_orders
-
+        return total_delivery_time / delivered_order_count
 
     def load_couriers_from_file(self, filename="couriers.json"):
-            import json, os
-            if not os.path.exists(filename):
-                return
-            
-            with open(filename, "r") as f:
-
-                data = json.load(f)
-
-                for entry in data:
-                    c = courier.Courier(entry["name"], entry["courier_id"], entry["region"])
-                    c.deliveries = entry.get("deliveries", [])
-                    self.couriers.append(c)
-            
-
-
-
-
-    def build_courier_load_heap(orders):
-        courier_order_counts = defaultdict(int)
-
-        for order in orders:
-            if order.courier:
-                courier_id = order.courier.courier_id
-                courier_order_counts[courier_id] += 1
-
-    
-        courier_heap = [(num_orders, courier_id) for courier_id, num_orders in courier_order_counts.items()]
-        heapq.heapify(courier_heap)
-
-        return courier_heap
-
-    # --------- order management functions ---------
-
+        if not os.path.exists(filename):
+            return
+        with open(filename, "r") as file:
+            data = json.load(file)
+            for entry in data:
+                courier_instance = courier.Courier(entry["name"], entry["courier_id"], entry["region"])
+                courier_instance.deliveries = entry.get("deliveries", [])
+                self.couriers.append(courier_instance)
 
     def load_orders_from_file(self, filename="orders.json"):
-            import json, os
-            if not os.path.exists(filename):
-                return
-            with open(filename, "r") as f:
-                data = json.load(f)
-                for entry in data:
-                    o = order.Order(entry["order_id"], entry["customer_id"], entry["destination"])
-                    o.order_id = entry["order_id"]
-                    o.status = entry["status"]
-                    o.date = entry["date"]
-                    courier_id = entry.get("courier_id")
-                    if courier_id:
-                        o.courier = self.find_courier_by_id(courier_id)
-                    self.orders.append(o)
-
-    def history_of_orders_by_customer(self, customer_id):
-        return [o for o in self.orders if o.customer_id == customer_id ]
-
-    def add_order(self, order_id, customer_name, delivery_address):
-        new_order = order.Order(order_id, customer_name, delivery_address)
-        self.orders.append(new_order)
-        print(f"Order {order_id} added for {customer_name} at {delivery_address}.")
-
-
-
-    def add_order_by_customer(self ,order_id, customer_name, delivery_address):
-        if not any(o.order_id == order_id for o in self.orders):
-            self.add_order(order_id, customer_name, delivery_address)
-        else:
-            print(f"Order {order_id} already exists. Please use a different order ID.")
-
-    def auto_assign_orders(self):
-        for o in self.orders:
-            if not o.is_assigned():
-                available_courier = courier.find_available_courier()
-                if available_courier:
-                    o.assign_to(available_courier)
-                    print(f"Order {o.order_id} assigned to courier {available_courier.name}.")
-                else:
-                    print(f"No available couriers for order {o.order_id}.")
-
-
-    def assign_order_to_courier(self, order_id, courier_id):
-            courier_obj = self.find_courier_by_id(courier_id)
-            for o in self.orders:
-                if o.order_id == order_id and courier_obj:
-                    o.courier = courier_obj
-                    courier_obj.assign_order(order_id)
-                    print(f"Order {order_id} assigned to courier {courier_obj.name}.")
-                    return
-            print(f"Order or courier not found.")
-
-
-
-    def get_active_orders(self):
-        return [o for o in self.orders if o.status != 'delivered' and o.status != 'cancelled']
-
-    def update_order_status(self, order_id, new_status):
-            for o in self.orders:
-                if o.order_id == order_id:
-                    o.update_status(new_status)
-                    print(f"Order {order_id} status updated to {new_status}")
-                    return
-            print(f"Order {order_id} not found.")
-
-    def get_orders_for_courier(self, courier_id):
-        return [o for o in self.orders if o.courier and o.courier.courier_id == courier_id]
-    
-    def save_order_to_file(self, order, filename="orders.json"):
-            import json
-            data = []
-            if os.path.exists(filename):
-                with open(filename, "r") as f:
-                    data = json.load(f)
-            data.append({
-                "order_id": order.order_id,
-                "customer_id": order.customer_id,
-                "destination": order.destination,
-                "status": order.status,
-                "date": str(order.date),
-                "courier_id": order.courier.courier_id if order.courier else None
-            })
-            with open(filename, "w") as f:
-                json.dump(data, f, indent=4)
+        if not os.path.exists(filename):
+            return
+        with open(filename, "r") as file:
+            data = json.load(file)
+            for entry in data:
+                order_instance = order.Order(entry["order_id"], entry["customer_id"], entry.get("pickup_location", ""), entry["destination"])
+                order_instance.status = entry["status"]
+                order_instance.date = entry["date"]
+                courier_id = entry.get("courier_id")
+                if courier_id:
+                    order_instance.courier = self.find_courier_by_id(courier_id)
+                self.orders.append(order_instance)
 
     def save_orders_to_file(self, filename="orders.json"):
-            import json
-            data = []
-            for o in self.orders:
-                data.append({
-                    "order_id": o.order_id,
-                    "customer_id": o.customer_id,
-                    "destination": o.destination,
-                    "status": o.status,
-                    "date": str(o.date),
-                    "courier_id": o.courier.courier_id if o.courier else None
-                })
-            with open(filename, "w") as f:
-                json.dump(data, f, indent=4)
-    #------------ COURIERS ------------
+        order_data_list = []
+        for order_instance in self.orders:
+            order_data_list.append({
+                "order_id": order_instance.order_id,
+                "customer_id": order_instance.customer_id,
+                "pickup_location": getattr(order_instance, "pickup_location", ""),
+                "destination": order_instance.destination,
+                "status": order_instance.status,
+                "date": str(order_instance.date),
+                "courier_id": order_instance.courier.courier_id if order_instance.courier else None
+            })
+        with open(filename, "w") as file:
+            json.dump(order_data_list, file, indent=4)
 
+    def add_order(self, order_instance):
+        for existing_order in self.orders:
+            if existing_order.order_id == order_instance.order_id:
+                print(f"Order {order_instance.order_id} already exists.")
+                return
+        self.orders.append(order_instance)
+        self.save_orders_to_file()
+        print(f"Order {order_instance.order_id} added.")
 
-    def add_courier(self, courier):
-            self.couriers.append(courier)
-            print(f"Courier {courier.name} (ID: {courier.courier_id}) added.")
-            self.save_couriers_to_file()
-    
-
-    def courier_update_status(self, courier_id, order_id, status):
-        courier = self.find_courier_by_id(courier_id)
-        if courier:
-            order = self.find_order_by_id(order_id)
-            if order and order.courier == courier:
-                order.update_status(status)
-                print(f"Order {order_id} status updated to {status} by courier {courier.name}.")
-                self.save_orders_to_file()
-            else:
-                print(f"Order {order_id} not found or not assigned to courier {courier.name}.")
-        else:
-            print(f"Courier {courier_id} not found.")
+    def add_courier(self, courier_instance):
+        if any(existing_courier.courier_id == courier_instance.courier_id for existing_courier in self.couriers):
+            print(f"Courier {courier_instance.courier_id} already exists.")
+            return
+        add_courier(courier_instance)
+        self.couriers.append(courier_instance)
+        print(f"Courier {courier_instance.name} added and saved.")
 
     def find_courier_by_id(self, courier_id):
-            for c in self.couriers:
-                if c.courier_id == courier_id:
-                    return c
-            return None
-        
-    def save_couriers_to_file(self, filename="couriers.json"):
-            import json
-            data = []
-            for c in self.couriers:
-                data.append({
-                    "name": c.name,
-                    "courier_id": c.courier_id,
-                    "region": c.courier_region,
-                    "deliveries": c.deliveries
-                })
-            with open(filename, "w") as f:
-                json.dump(data, f, indent=4)   
+        for courier_instance in self.couriers:
+            if courier_instance.courier_id == courier_id:
+                return courier_instance
+        return None
 
-    def find_available_courier(self):
-            if not self.couriers:
-                return None
-            return min(self.couriers, key=lambda c: len(c.deliveries))
+    def assign_order_to_courier(self, order_id, courier_id):
+        courier_instance = self.find_courier_by_id(courier_id)
+        for order_instance in self.orders:
+            if order_instance.order_id == order_id and courier_instance:
+                order_instance.courier = courier_instance
+                courier_instance.assign_order(order_id)
+                print(f"Order {order_id} assigned to courier {courier_instance.name}.")
+                self.save_orders_to_file()
+                return
+        print(f"Order or courier not found.")
+
+    def auto_assign_orders(self):
+        for order_instance in self.orders:
+            if not order_instance.is_assigned():
+                available_couriers = self.get_available_couriers()
+                if available_couriers:
+                    courier_instance = available_couriers[0]
+                    order_instance.assign_to(courier_instance)
+                    print(f"Order {order_instance.order_id} assigned to courier {courier_instance.name}.")
+        self.save_orders_to_file()
+
+    def courier_update_status(self, courier_id, order_id, new_status):
+        courier_instance = self.find_courier_by_id(courier_id)
+        if not courier_instance:
+            print(f"Courier {courier_id} not found.")
+            return
+        for order_instance in self.orders:
+            if order_instance.order_id == order_id:
+                if order_instance.courier is None:
+                    print(f"Order {order_id} is not assigned to any courier.")
+                    return
+                elif order_instance.courier.courier_id != courier_id:
+                    print(f"Order {order_id} is not assigned to courier {courier_instance.name}.")
+                    return
+                order_instance.update_status(new_status)
+                print(f"Order {order_id} status updated to '{new_status}' by courier {courier_instance.name}.")
+                self.save_orders_to_file()
+                return
+        print(f"Order {order_id} not found.")
+
+    def update_order_status(self, order_id, new_status):
+        for order_instance in self.orders:
+            if order_instance.order_id == order_id:
+                order_instance.update_status(new_status)
+                print(f"Order {order_id} status updated to {new_status}")
+                self.save_orders_to_file()
+                return
+        print(f"Order {order_id} not found.")
+
+    def get_orders_for_courier(self, courier_id):
+        return [order_instance for order_instance in self.orders if order_instance.courier and order_instance.courier.courier_id == courier_id]
+
+    def get_active_orders(self):
+        return [order_instance for order_instance in self.orders if order_instance.status not in ('delivered', 'cancelled')]
+
+    def get_available_couriers(self, max_deliveries=3):
+        return [courier_instance for courier_instance in self.couriers if len(courier_instance.deliveries) < max_deliveries]
 
     def get_active_couriers(self):
-            return [c for c in self.couriers if len(c.deliveries) > 0]
+        return [courier_instance for courier_instance in self.couriers if len(courier_instance.deliveries) > 0]
 
     def get_all_couriers(self):
-            return self.couriers
+        return self.couriers
 
     def get_region_loads(self):
-            region_counts = defaultdict(int)
-            for o in self.orders:
-                if o.courier:
-                    region_counts[o.courier.courier_region] += 1
-            return dict(region_counts)
+        region_counts = defaultdict(int)
+        for order_instance in self.orders:
+            if order_instance.courier:
+                region_counts[order_instance.courier.courier_region] += 1
+        return dict(region_counts)
 
-    def get_average_delivery_time(self):
-            total_time = 0
-            delivered_orders = 0
-            for o in self.orders:
-                if hasattr(o, 'delivery_time'):
-                    total_time += o.delivery_time
-                    delivered_orders += 1
-            return total_time / delivered_orders if delivered_orders > 0 else 0
-
-    
+    def history_of_orders_by_customer(self, customer_id):
+        return [order_instance for order_instance in self.orders if order_instance.customer_id == customer_id]

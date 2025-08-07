@@ -44,18 +44,16 @@ class Order:
     #     self.date = datetime.now()
     #     self.courier = None  # ← שורה חשובה שחסרה -added by avital
 
-    def __init__(self, order_id, customer_id, destination):
+    def __init__(self, order_id, customer_id, pickup_location, destination):
         self.order_id = order_id
         self.customer_id = customer_id
+        self.pickup_location = pickup_location
         self.destination = destination
         self.status = 'pending'
         self.date = datetime.now()
         self.courier = None
 
-        # save in a json file
-        import json
-        import os
-        orders_file = 'orders.json'
+        
 
     def get_order_id(self) -> int:
         return self.order_id
@@ -82,6 +80,7 @@ class Order:
         return {
             "order_id": self.order_id,
             "customer_id": self.customer_id,
+            "pickup_location": self.pickup_location,
             "destination": self.destination,
             "status": self.status,
             "date": self.date.strftime("%Y-%m-%d %H:%M:%S")
