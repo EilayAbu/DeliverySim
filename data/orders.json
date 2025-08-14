@@ -11554,5 +11554,32 @@
         "status": "pending",
         "date": "2025-08-14 12:49:33.681389",
         "courier_id": null
+    },
+    {
+        "order_id": 10000,
+        "customer_id": 1003,
+        "pickup_location": "Haifa",
+        "destination": "Beer Sheva",
+        "status": "delivered",
+        "date": "2025-08-07T15:28:00",
+        "courier_id": 2003
+    },
+    {
+        "order_id": 10002,
+        "customer_id": 1002,
+        "pickup_location": "Tel Aviv",
+        "destination": "Holon",
+        "status": "in_transit",
+        "date": "2025-08-07T15:28:00",
+        "courier_id": 2001
+    },
+    {
+        "order_id": 10007,
+        "customer_id": 1001,
+        "pickup_location": "Jerusalem",
+        "destination": "Petah Tikva",
+        "status": "pending",
+        "date": "2025-08-07T15:28:00",
+        "courier_id": null
     }
 ]
