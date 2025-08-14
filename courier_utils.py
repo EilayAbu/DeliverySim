@@ -31,7 +31,7 @@ def add_courier(courier):
     couriers.append({
         "name": courier.name,
         "courier_id": courier.courier_id,
-        "region": courier.courier_region,
+        "region": courier.region,
         "location": courier.location,   
         "deliveries": courier.deliveries
     })
@@ -45,7 +45,7 @@ def update_courier(courier):
             couriers[i] = {
                 "name": courier.name,
                 "courier_id": courier.courier_id,
-                "region": courier.courier_region,
+                "region": courier.region,
                 "location": courier.location,  # ← NEW
                 "deliveries": courier.deliveries
             }

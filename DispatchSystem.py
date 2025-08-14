@@ -51,6 +51,7 @@ class DispatchSystem:
                 self.couriers.append(courier_instance)
 
     def load_orders_from_file(self, filename="data/orders.json"):
+        self.orders = []
         if not os.path.exists(filename):
             return
         with open(filename, "r") as file:

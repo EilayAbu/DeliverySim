@@ -11,7 +11,6 @@ from courier_utils import get_courier_by_id
 # ---------------------- GLOBAL STATE ----------------------
 
 dispatch_system = DispatchSystem()
-dispatch_system.load_orders_from_file()
 user = None
 
 
@@ -138,7 +137,7 @@ def menu_for_customer(customer):
                 print("You have no active orders.")
             else:
                 for order in filtered_orders:
-                    print(order)
+                    print(f"order_id={order.order_id}, pickup={order.pickup_location}, destination={order.destination}, status={order.status}, date={order.date}, courier_id={getattr(order.courier, 'courier_id', None)}")
 
         elif choice == "3":
             order_history = dispatch_system.history_of_orders_by_customer(customer.customer_id)
@@ -192,7 +191,7 @@ def menu_for_courier(courier):
             if not assigned_orders:
                 print("No orders assigned to you.")
             for order in assigned_orders:
-                print(order)
+                print(f"order_id={order.order_id}, pickup={order.pickup_location}, destination={order.destination}, status={order.status}, date={order.date}, customer_id={order.customer_id}")
 
         elif choice == "2":
             order_id = int(input("Enter order ID: "))
@@ -229,7 +228,7 @@ def menu_for_manager():
         elif choice == "2":
             active_orders = dispatch_system.get_active_orders()
             for order in active_orders:
-                print(order)
+                print(f"order_id={order.order_id}, pickup={order.pickup_location}, destination={order.destination}, status={order.status}, date={order.date}, courier_id={getattr(order.courier, 'courier_id', None)}, customer_id={order.customer_id}")
 
         elif choice == "3":
             order_id = int(input("Enter order ID to assign: "))

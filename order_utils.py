@@ -52,20 +52,27 @@ def add_order(order):
 
 def update_order(order):
     orders = _load_all_orders()
+    updated = False
     for i, o in enumerate(orders):
         if o["order_id"] == order.order_id:
             orders[i] = {
                 "order_id": order.order_id,
                 "customer_id": order.customer_id,
+                "pickup_location": order.pickup_location,
                 "destination": order.destination,
                 "status": order.status,
                 "date": str(order.date),
-                "courier_id": order.courier.courier_id if order.courier else None
+                "courier_id": order.courier.courier_id if order.courier else None,
+                "delivery_time": order.delivery_time
             }
-            _save_all_orders(orders)
-            print(f"Order {order.order_id} updated.")
-            return
-    print("Order not found for update.")
+            updated = True
+            break
+
+    if updated:
+        _save_all_orders(orders)
+        print(f"Order {order.order_id} updated.")
+    else:
+        print("Order not found for update.")
 
 def delete_order(order_id):
     orders = _load_all_orders()
