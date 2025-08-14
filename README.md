@@ -67,7 +67,7 @@ DeliverySim/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/DeliverySim.git
+   git clone https://github.com/EilayAbu/DeliverySim.git
    cd DeliverySim
    ```
 
