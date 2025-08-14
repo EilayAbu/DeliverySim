@@ -20,6 +20,8 @@ import Order as order
 import json
 import os
 
+from google_maps_service import GoogleMapsService
+
 class DispatchSystem:
     def __init__(self):
         self.orders = []
@@ -38,17 +40,17 @@ class DispatchSystem:
             return 0
         return total_delivery_time / delivered_order_count
 
-    def load_couriers_from_file(self, filename="couriers.json"):
+    def load_couriers_from_file(self, filename="data/couriers.json"):
         if not os.path.exists(filename):
             return
         with open(filename, "r") as file:
             data = json.load(file)
             for entry in data:
-                courier_instance = courier.Courier(entry["name"], entry["courier_id"], entry["region"])
+                courier_instance = courier.Courier(entry["name"], entry["courier_id"], entry["region"],entry["location"])
                 courier_instance.deliveries = entry.get("deliveries", [])
                 self.couriers.append(courier_instance)
 
-    def load_orders_from_file(self, filename="orders.json"):
+    def load_orders_from_file(self, filename="data/orders.json"):
         if not os.path.exists(filename):
             return
         with open(filename, "r") as file:
@@ -62,7 +64,7 @@ class DispatchSystem:
                     order_instance.courier = self.find_courier_by_id(courier_id)
                 self.orders.append(order_instance)
 
-    def save_orders_to_file(self, filename="orders.json"):
+    def save_orders_to_file(self, filename="data/orders.json"):
         order_data_list = []
         for order_instance in self.orders:
             order_data_list.append({
@@ -173,3 +175,67 @@ class DispatchSystem:
 
     def history_of_orders_by_customer(self, customer_id):
         return [order_instance for order_instance in self.orders if order_instance.customer_id == customer_id]
+    
+    
+    def find_nearest_courier_to_pickup(self, pickup_address: str, max_deliveries=3):
+        """
+        מחזיר tuple: (courier_obj, metrics_dict) עבור השליח הזמין הקרוב ביותר לכתובת האיסוף.
+        metrics_dict כולל: distance_km, duration_min.
+        אם אין שליח זמין עם כתובת, מחזיר (None, None).
+        """
+        candidates = self.get_available_couriers(max_deliveries=max_deliveries)
+        
+
+        
+        nearest = None
+        best_metrics = None
+
+        for cr in candidates:
+            origin = getattr(cr, "location", None) or getattr(cr, "region", None)
+            if not origin:
+                continue  # אין שום מיקום – מדלגים
+
+            try:
+                metrics = GoogleMapsService.get_distance_and_duration(origin, pickup_address)
+            except Exception as e:
+                print(f"Failed to get distance for courier {cr.courier_id}: {e}")
+                # אופציונלי: אם הוספנו פולבק אופליין ב-google_maps_service, לא צריך כאן עוד try
+                continue
+
+            if nearest is None or metrics["distance_km"] < best_metrics["distance_km"]:
+                nearest = cr
+                best_metrics = metrics
+
+
+        return nearest, best_metrics
+
+    def assign_nearest_courier(self, order_id: int, max_deliveries=7):
+        """
+        מאתר את השליח הזמין הקרוב ביותר לכתובת האיסוף של ההזמנה, ומקצה אותו.
+        """
+        # מציאת ההזמנה
+        target = None
+        for o in self.orders:
+            if o.order_id == order_id:
+                target = o
+                break
+
+        if not target:
+            print(f"Order {order_id} not found.")
+            return
+
+        if not getattr(target, "pickup_location", None):
+            print(f"Order {order_id} has no pickup_location.")
+            return
+
+        courier, metrics = self.find_nearest_courier_to_pickup(target.pickup_location, max_deliveries=max_deliveries)
+        if not courier:
+            print("No available courier with a known location.")
+            return
+
+        target.courier = courier
+        courier.assign_order(order_id)
+        self.save_orders_to_file()
+        print(f"Order {order_id} assigned to nearest courier {courier.name} "
+              f"({metrics['distance_km']} km, ~{metrics['duration_min']} min).")
+

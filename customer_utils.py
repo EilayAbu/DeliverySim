@@ -66,9 +66,14 @@ def delete_customer(customer_id):
 def get_all_customers():
     return _load_all_customers()
 
-def get_customer_by_id(customer_id):
-    customers = _load_all_customers()
-    for c in customers:
-        if c["customer_id"] == customer_id:
-            return c
+def get_customer_by_id(customer_id, filename="data/customers.json"):
+    import json
+    try:
+        with open(filename, "r") as f:
+            customers = json.load(f)
+        for c in customers:
+            if c["customer_id"] == customer_id:
+                return c
+    except FileNotFoundError:
+        return None
     return None

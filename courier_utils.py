@@ -32,6 +32,7 @@ def add_courier(courier):
         "name": courier.name,
         "courier_id": courier.courier_id,
         "region": courier.courier_region,
+        "location": courier.location,   
         "deliveries": courier.deliveries
     })
     _save_all_couriers(couriers)
@@ -45,12 +46,12 @@ def update_courier(courier):
                 "name": courier.name,
                 "courier_id": courier.courier_id,
                 "region": courier.courier_region,
+                "location": courier.location,  # ← NEW
                 "deliveries": courier.deliveries
             }
             _save_all_couriers(couriers)
             print(f"Courier {courier.courier_id} updated.")
             return
-    print("Courier not found for update.")
 
 def delete_courier(courier_id):
     couriers = _load_all_couriers()
