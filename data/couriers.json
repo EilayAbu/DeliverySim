@@ -1,0 +1,39 @@
+[
+    {
+        "name": "Tom Levi",
+        "courier_id": 2001,
+        "region": "Tel Aviv",
+        "location": "Rothschild Blvd 1, Tel Aviv-Yafo, Israel",
+        "deliveries": [
+            10002,
+            10006
+        ]
+    },
+    {
+        "name": "Noa Ben",
+        "courier_id": 2002,
+        "region": "Haifa",
+        "location": "HaNassi Blvd 109, Haifa, Israel",
+        "deliveries": [
+            10003
+        ]
+    },
+    {
+        "name": "Itay Azulay",
+        "courier_id": 2003,
+        "region": "Jerusalem",
+        "location": "Jaffa St 97, Jerusalem, Israel",
+        "deliveries": [
+            10000,
+            10005,
+            10008
+        ]
+    },
+    {
+        "name": "Omer",
+        "courier_id": 98765,
+        "region": "Tel Aviv",
+        "location": "Tel Aviv , Klauzner 16",
+        "deliveries": []
+    }
+]

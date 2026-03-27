@@ -1,0 +1,30 @@
+[
+    {
+        "customer_id": 1001,
+        "name": "Alice Cohen",
+        "password": "pass123",
+        "address": "Tel Aviv",
+        "phone": "0501234567"
+    },
+    {
+        "customer_id": 1002,
+        "name": "Rami Levi",
+        "password": "rami456",
+        "address": "Haifa",
+        "phone": "0507654321"
+    },
+    {
+        "customer_id": 1003,
+        "name": "Dana Mor",
+        "password": "dana789",
+        "address": "Jerusalem",
+        "phone": "0509998888"
+    },
+    {
+        "customer_id": 23456788,
+        "name": "Miri Abu",
+        "password": "123456",
+        "address": "Kfar Ahim , Hahadas 125",
+        "phone": "0505558255"
+    }
+]
